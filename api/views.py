@@ -1,5 +1,6 @@
 from admin.utils import is_blocked
 from finance.utils import get_user
+import datetime
 
 from rest_framework import status, generics, serializers
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
@@ -101,6 +102,8 @@ class VerifySMSCode(generics.GenericAPIView):
             if not user.is_verified_by_phone:
                 if code == user.code_for_phone:
                     user.is_verified_by_phone = True
+                    if user.is_verified_by_email == True:
+                        user.date_of_activate = datetime.datetime.now()
                     return Response(
                         {"succeess": "Account verified successfully"},
                         status=status.HTTP_200_OK,
@@ -136,6 +139,8 @@ class VerifyEmail(generics.GenericAPIView):
 
         if not user.is_verified_by_email:
             user.is_verified_by_email = True
+            if user.is_verified_by_phone_number == True:
+                user.date_of_activate = datetime.datetime.now()
             user.save()
             return Response(
                 {"email": "Successfully activated"}, status=status.HTTP_200_OK

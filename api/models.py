@@ -18,6 +18,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     second_name = models.CharField(max_length=255, verbose_name="Фамилия")
     patronymic = models.CharField(max_length=255, blank=True, verbose_name="Отчество")
     phone_number = PhoneNumberField()
+    date_of_registration = models.DateTimeField(
+        auto_now_add=True, db_index=True, verbose_name="Дата регистрации"
+    )
     code_for_phone = models.CharField(
         max_length=6, blank=True, default="", verbose_name="код для телефона"
     )
@@ -84,6 +87,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     number_of_bank_cart = models.CharField(
         max_length=255, blank=True, default="", verbose_name="Номер банковской карты"
     )
+    date_of_activate = models.DateField(auto_now=False, auto_now_add=False)
 
     is_staff = models.BooleanField(default=False)
     is_verified_by_email = models.BooleanField(default=False)
@@ -135,6 +139,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         some_data = {"id": self.pk, "exp": 1916239022}
         token = jwt.encode(some_data, settings.SECRET_KEY, algorithm="HS256")
         return token.decode("utf-8")
+
+    class Meta:
+        verbose_name_plural = "Пользователи"
+        verbose_name = "Пользователь"
 
 
 class UserManager(BaseUserManager):

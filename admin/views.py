@@ -27,3 +27,25 @@ class BlockUserAPIView(generics.GenericAPIView):
             return Response(
                 {"Error": "Serializer error"}, status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class UnBlockUserAPIView(generics.GenericAPIView):
+    permission_classes = [IsAdminUser]
+    serializer_class = BlockUserSerializer
+
+    @swagger_auto_schema(tags=["Admin"])
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            id = serializer.data.get("id")
+            user = User.objects.get(id=id)
+            user.is_blocked = False
+            user.save()
+            return Response(
+                {"Success": f"User {user.username} has been blocked"},
+                status=status.HTTP_200_OK,
+            )
+        else:
+            return Response(
+                {"Error": "Serializer error"}, status=status.HTTP_400_BAD_REQUEST
+            )

@@ -14,9 +14,12 @@ class Index(models.Model):
     name = models.CharField(max_length=255, verbose_name="Название индекса")
     price = models.CharField(max_length=255, default=0, verbose_name="Цена")
 
+    def __str__(self):
+        return self.name
+
     class Meta:
-        def __str__(self):
-            return self.name
+        verbose_name_plural = "Индексы"
+        verbose_name = "Индекс"
 
 
 class UserFinance(models.Model):
@@ -27,8 +30,11 @@ class UserFinance(models.Model):
     )
 
     class Meta:
-        def __str__(self):
-            return self.name
+        verbose_name_plural = "Финансовая информация пользователей"
+        verbose_name = "Финансовая информация пользователей"
+
+    def __str__(self):
+        return self.name
 
 
 class HistoryOfTopUp(models.Model):
@@ -39,8 +45,11 @@ class HistoryOfTopUp(models.Model):
     )
 
     class Meta:
-        def __str__(self):
-            return self.name
+        verbose_name_plural = "История пополнения пользователей"
+        verbose_name = "История пополнения пользователя"
+
+    def __str__(self):
+        return "Сумма пополнения: " + self.summ
 
 
 class HistroyOfСonsumption(models.Model):
@@ -51,5 +60,8 @@ class HistroyOfСonsumption(models.Model):
     )
 
     class Meta:
-        def __str__(self):
-            return self.name
+        verbose_name_plural = "История расхода пользователей"
+        verbose_name = "История расхода пользователя"
+
+    def __str__(self):
+        return "Сумма трат: " + self.summ
