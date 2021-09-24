@@ -4,6 +4,12 @@ from django.db.models import fields
 from django.db.models.deletion import CASCADE
 from api.models import User
 
+STATUS_CHOICES = (
+    ("payed", "Оплачено"),
+    ("discline", "Отказ"),
+    ("processing", "В процессе"),
+)
+
 
 class Index(models.Model):
     user = models.ForeignKey(User, on_delete=CASCADE, verbose_name="Пользователь")
@@ -40,8 +46,8 @@ class UserFinance(models.Model):
 class HistoryOfTopUp(models.Model):
     user = models.ForeignKey(User, on_delete=CASCADE, verbose_name="Пользователь")
     summ = models.CharField(max_length=255, default=0, verbose_name="Сумма пополнения")
-    time_of_payment = models.DateTimeField(
-        auto_now_add=True, db_index=True, verbose_name="Время пополнения"
+    date_of_operation = models.DateTimeField(
+        auto_now_add=True, db_index=True, verbose_name="Дата операции"
     )
 
     class Meta:
@@ -55,8 +61,8 @@ class HistoryOfTopUp(models.Model):
 class HistroyOfСonsumption(models.Model):
     user = models.ForeignKey(User, on_delete=CASCADE, verbose_name="Пользователь")
     summ = models.CharField(max_length=255, default=0, verbose_name="Сумма траты")
-    time_of_spend = models.DateTimeField(
-        auto_now_add=True, db_index=True, verbose_name="Время расхода"
+    date_of_operation = models.DateTimeField(
+        auto_now_add=True, db_index=True, verbose_name="Дата операции"
     )
 
     class Meta:
@@ -65,3 +71,22 @@ class HistroyOfСonsumption(models.Model):
 
     def __str__(self):
         return "Сумма трат: " + self.summ
+
+
+class SharingMoney(models.Model):
+    user = models.ForeignKey(User, on_delete=CASCADE, verbose_name="Пользователь")
+    date_of_operation = models.DateTimeField(
+        auto_now_add=True, db_index=True, verbose_name="Дата операции"
+    )
+    status = models.CharField(
+        max_length=255,
+        choices=STATUS_CHOICES,
+        default="processing",
+        verbose_name="Статус вывода",
+    )
+    summ = models.CharField(max_length=255, verbose_name="Сумма на вывод")
+    way_to_pay = models.CharField(max_length=255, verbose_name="Способо оплаты")
+
+    class Meta:
+        verbose_name_plural = "Сумма на вывод пользоваталей"
+        verbose_name = "Сумма на вывод пользователя"

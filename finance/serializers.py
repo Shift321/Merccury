@@ -1,5 +1,5 @@
 from django.db.models import fields
-from finance.models import Index, UserFinance
+from finance.models import Index, SharingMoney, UserFinance
 from rest_framework import serializers
 
 
@@ -28,3 +28,12 @@ class TopUpSerializer(serializers.Serializer):
     class Meta:
         model = UserFinance
         fields = ["summ_of_top_up"]
+
+
+class CreateSharingMoneySerializer(serializers.Serializer):
+    summ = serializers.CharField(max_length=255)
+    way_to_pay = serializers.CharField(max_length=255)
+
+    class Meta:
+        model = SharingMoney
+        fields = ["summ", "way_to_pay"]

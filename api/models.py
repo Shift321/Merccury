@@ -17,7 +17,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=255, verbose_name="Имя")
     second_name = models.CharField(max_length=255, verbose_name="Фамилия")
     patronymic = models.CharField(max_length=255, blank=True, verbose_name="Отчество")
-    phone_number = PhoneNumberField()
+    phone_number = PhoneNumberField(verbose_name="Номер телефона")
     date_of_registration = models.DateTimeField(
         auto_now_add=True, db_index=True, verbose_name="Дата регистрации"
     )
@@ -87,14 +87,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     number_of_bank_cart = models.CharField(
         max_length=255, blank=True, default="", verbose_name="Номер банковской карты"
     )
-    date_of_activate = models.DateField(auto_now=False, auto_now_add=False)
+    date_of_activate = models.DateField(
+        auto_now=False, auto_now_add=False, verbose_name="Дата активации"
+    )
 
     is_staff = models.BooleanField(default=False)
     is_verified_by_email = models.BooleanField(default=False)
     is_verified_by_phone = models.BooleanField(default=False)
     is_blocked = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-
     USERNAME_FIELD = "username"
 
     REQUIRED_FIELDS = (

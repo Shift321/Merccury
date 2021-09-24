@@ -6,11 +6,18 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from mercury.settings import SECRET_KEY
-from .models import Index, UserFinance, HistoryOfTopUp, HistroyOfСonsumption
+from .models import (
+    Index,
+    SharingMoney,
+    UserFinance,
+    HistoryOfTopUp,
+    HistroyOfСonsumption,
+)
 from .serializers import (
     GetFinanceInfoSerializer,
     CreateIndexSerializer,
     TopUpSerializer,
+    CreateSharingMoneySerializer,
 )
 from .utils import get_user
 
@@ -143,3 +150,23 @@ class ShowHistroyOfСonsumptionAPIView(generics.GenericAPIView):
             summ_of_all_consumption += int(history[i].summ)
         data.update({"summ_of_all_consumption": summ_of_all_consumption})
         return Response(data, status=status.HTTP_200_OK)
+
+
+class CreateSharingMoney(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CreateSharingMoneySerializer
+
+    @swagger_auto_schema(tags=["Finance"])
+    def post(self, request):
+        serilazer = self.serializer_class(data=request)
+        serilazer.is_valid(raise_exception=True)
+        user = get_user(request)
+        application = SharingMoney.objects.create()
+        application.user = user
+        application.summ = serilazer.data.get("summ")
+        application.way_to_pay = serilazer.data.get("way_to_pay")
+        application.save()
+        return Response(
+            {"success": "Your application created successfully"},
+            status=status.HTTP_200_OK,
+        )
