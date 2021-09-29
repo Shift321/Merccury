@@ -1,3 +1,4 @@
+from api.utils import Util
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
@@ -47,6 +48,19 @@ class LoginSerializer(serializers.ModelSerializer):
         model = User
         fields = ["username", "password", "token"]
 
+    def send_email_with_code(user):
+        code = Util.create_code(user, "email")
+        data_for_email = {
+            "email_body": f"yout verification code : {code}",
+            "to_email": user.email,
+            "email_subject": "Verify your email",
+        }
+        Util.send_email(data_for_email)
+
+    def send_sms_with_code(user):
+        code = Util.create_code(user, "SMS")
+        Util.send_sms(code, user.phone_number)
+
     def validate(self, data):
         username = data.get("username", None)
         password = data.get("password", None)
@@ -62,8 +76,20 @@ class LoginSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A user with this login was not found")
 
         if not user.is_active:
-            raise serializers.ValidationError("this fuser has beed deactivated")
-        return {"token": user.token}
+            raise serializers.ValidationError("this user has beed deactivated")
+
+        if user.verification_choice == "absent":
+            return {"token": user.token}
+        if user.verification_choice == "SMS":
+            self.send_sms_with_code(user)
+            return {"token": user.token}
+        if user.verification_choice == "email":
+            self.send_email_with_code(user)
+            return {"token": user.token}
+        if user.verification_choice == "SMS_email":
+            self.send_sms_with_code(user)
+            self.send_email_with_code(user)
+            return {"token": user.token}
 
 
 class ChangePasswordSerializer(serializers.ModelSerializer):
@@ -162,3 +188,18 @@ class AddMoreUserInfoSerializer(serializers.Serializer):
             "snils",
             "number_of_bank_cart",
         ]
+
+
+class ChangeVerificationChoiceSerializer(serializers.Serializer):
+    what_choice = serializers.CharField(max_length=1, min_length=1)
+
+    class Meta:
+        model = User
+
+
+class LoginVerificationSerializer(serializers.Serializer):
+    email_code = serializers.CharField(max_length=6, min_length=6, required=False)
+    sms_code = serializers.CharField(max_length=6, min_length=6, required=False)
+
+    class Meta:
+        model = User

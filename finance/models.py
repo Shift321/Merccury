@@ -87,6 +87,9 @@ class SharingMoney(models.Model):
     summ = models.CharField(max_length=255, verbose_name="Сумма на вывод")
     way_to_pay = models.CharField(max_length=255, verbose_name="Способо оплаты")
 
+    def __str__(self):
+        return f"Заявка пользователя {self.user.username}"
+
     class Meta:
         verbose_name_plural = "Сумма на вывод пользоваталей"
         verbose_name = "Сумма на вывод пользователя"

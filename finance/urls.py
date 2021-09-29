@@ -2,9 +2,10 @@ from finance.views import (
     CreateIndexAPIView,
     GetFinanceInfoAPIView,
     ShowHistroyOfTopUpAPIView,
+    ShowSharingMoneyApplicationAPIView,
     TopUpBalanceAPIView,
     ShowHistroyOfСonsumptionAPIView,
-    CreateSharingMoney,
+    CreateSharingMoneyAPIView,
 )
 from django.urls import path, include
 
@@ -14,5 +15,6 @@ urlpatterns = [
     path("top-up-balance", TopUpBalanceAPIView.as_view()),
     path("show-history-of-top-up", ShowHistroyOfTopUpAPIView.as_view()),
     path("show-history-of-consumption", ShowHistroyOfСonsumptionAPIView.as_view()),
-    path("share-money", CreateSharingMoney.as_view()),
+    path("share-money", CreateSharingMoneyAPIView.as_view()),
+    path("show-sharing-money", ShowSharingMoneyApplicationAPIView.as_view()),
 ]

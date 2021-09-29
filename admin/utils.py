@@ -1,4 +1,4 @@
-from finance.utils import get_user
+from api.utils import get_user
 
 
 def is_blocked(request):

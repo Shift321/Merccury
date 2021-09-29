@@ -1,4 +1,6 @@
+from os import stat
 from re import T
+import re
 from django.db.models import query
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -16,10 +18,13 @@ from .models import (
 from .serializers import (
     GetFinanceInfoSerializer,
     CreateIndexSerializer,
+    ShowHistoryOfConSerializer,
+    ShowHistoryOfTopUpSerializer,
     TopUpSerializer,
     CreateSharingMoneySerializer,
+    ShowSharingMoneyApplicationSerializer,
 )
-from .utils import get_user
+from api.utils import get_user
 
 from drf_yasg.utils import swagger_auto_schema
 
@@ -53,37 +58,32 @@ class CreateIndexAPIView(generics.GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         finance = UserFinance.objects.get(user=user)
 
-        if serializer.is_valid(raise_exception=True):
-            state = serializer.data.get("state")
-            name = serializer.data.get("name")
-            price = serializer.data.get("price")
-            if int(finance.balance) >= int(price):
-                index = Index.objects.create(user=user)
-                index.state = state
-                index.name = name
-                index.price = price
-                new_balance = int(finance.balance) - int(price)
-                finance.balance = new_balance
-                new_summ = int(finance.price_of_all_indexes) + int(price)
-                finance.price_of_all_indexes = new_summ
-                histroy = HistroyOfСonsumption.objects.create(user=user)
-                histroy.summ = price
-                histroy.save()
-                finance.save()
-                index.save()
-            else:
-                return Response(
-                    {"error": "Not enough money on balance"},
-                    status=status.HTTP_406_NOT_ACCEPTABLE,
-                )
-            return Response(
-                {"Success": "Successfully added index"}, status=status.HTTP_201_CREATED
-            )
+        serializer.is_valid(raise_exception=True)
+        state = serializer.data.get("state")
+        name = serializer.data.get("name")
+        price = serializer.data.get("price")
+        if int(finance.balance) >= int(price):
+            index = Index.objects.create(user=user)
+            index.state = state
+            index.name = name
+            index.price = price
+            new_balance = int(finance.balance) - int(price)
+            finance.balance = new_balance
+            new_summ = int(finance.price_of_all_indexes) + int(price)
+            finance.price_of_all_indexes = new_summ
+            histroy = HistroyOfСonsumption.objects.create(user=user)
+            histroy.summ = price
+            histroy.save()
+            finance.save()
+            index.save()
         else:
             return Response(
-                {"error": "Serrializer is not valid"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": "Not enough money on balance"},
+                status=status.HTTP_406_NOT_ACCEPTABLE,
             )
+        return Response(
+            {"Success": "Successfully added index"}, status=status.HTTP_201_CREATED
+        )
 
 
 class TopUpBalanceAPIView(generics.GenericAPIView):
@@ -94,65 +94,71 @@ class TopUpBalanceAPIView(generics.GenericAPIView):
     def post(self, request):
         user = get_user(request)
         serilizer = self.serializer_class(data=request.data)
-        if serilizer.is_valid(raise_exception=True):
-            summ_of_top_up = serilizer.data.get("summ_of_top_up")
-            queryset = UserFinance.objects.filter(user=user)
-            if queryset.exists():
-                balance = queryset[0]
-            else:
-                balance = UserFinance.objects.create(user=user)
-            new_balance = int(balance.balance) + int(summ_of_top_up)
-            balance.balance = new_balance
-            balance.save()
-            history = HistoryOfTopUp.objects.create(user=user)
-            history.summ = summ_of_top_up
-            history.save()
-            return Response(
-                {"Success": "Balance top up successfull"}, status=status.HTTP_200_OK
-            )
+        serilizer.is_valid(raise_exception=True)
+        summ_of_top_up = serilizer.data.get("summ_of_top_up")
+        queryset = UserFinance.objects.filter(user=user)
+        if queryset.exists():
+            balance = queryset[0]
         else:
-            return Response({"Error": "Serializer error"})
+            balance = UserFinance.objects.create(user=user)
+        new_balance = int(balance.balance) + int(summ_of_top_up)
+        balance.balance = new_balance
+        balance.save()
+        history = HistoryOfTopUp.objects.create(user=user)
+        history.summ = summ_of_top_up
+        history.save()
+        return Response(
+            {"Success": "Balance top up successfull"}, status=status.HTTP_200_OK
+        )
 
 
 class ShowHistroyOfTopUpAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = ShowHistoryOfTopUpSerializer
 
     @swagger_auto_schema(tags=["Finance"])
     def get(self, request):
         user = get_user(request)
         history = HistoryOfTopUp.objects.filter(user=user)
-        summ_of_all_top_up = 0
-        data = {}
-        for i in range(history.count()):
-            data[i] = {
-                "summ_of_top_up": history[i].summ,
-                "date_of_top_up": history[i].time_of_payment,
-            }
-            summ_of_all_top_up += int(history[i].summ)
-        data.update({"summ_of_all_top_up": summ_of_all_top_up})
-        return Response(data, status=status.HTTP_200_OK)
+        if history.exists():
+            summ_of_all_top_up = 0
+            data = {}
+            for i in range(history.count()):
+                data[i] = {
+                    "summ_of_top_up": history[i].summ,
+                    "date_of_top_up": history[i].time_of_payment,
+                }
+                summ_of_all_top_up += int(history[i].summ)
+            data.update({"summ_of_all_top_up": summ_of_all_top_up})
+            return Response(data, status=status.HTTP_200_OK)
+        else:
+            return Response({"Error": "No history"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class ShowHistroyOfСonsumptionAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = ShowHistoryOfConSerializer
 
     @swagger_auto_schema(tags=["Finance"])
     def get(self, request):
         user = get_user(request)
         history = HistroyOfСonsumption.objects.filter(user=user)
-        summ_of_all_consumption = 0
-        data = {}
-        for i in range(history.count()):
-            data[i] = {
-                "summ_of_spend": history[i].summ,
-                "date_of_spend": history[i].time_of_spend,
-            }
-            summ_of_all_consumption += int(history[i].summ)
-        data.update({"summ_of_all_consumption": summ_of_all_consumption})
-        return Response(data, status=status.HTTP_200_OK)
+        if history.exists():
+            summ_of_all_consumption = 0
+            data = {}
+            for i in range(history.count()):
+                data[i] = {
+                    "summ_of_spend": history[i].summ,
+                    "date_of_spend": history[i].time_of_spend,
+                }
+                summ_of_all_consumption += int(history[i].summ)
+            data.update({"summ_of_all_consumption": summ_of_all_consumption})
+            return Response(data, status=status.HTTP_200_OK)
+        else:
+            return Response({"Error": "No histroy"}, status=status.HTTP_404_NOT_FOUND)
 
 
-class CreateSharingMoney(generics.GenericAPIView):
+class CreateSharingMoneyAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CreateSharingMoneySerializer
 
@@ -170,3 +176,28 @@ class CreateSharingMoney(generics.GenericAPIView):
             {"success": "Your application created successfully"},
             status=status.HTTP_200_OK,
         )
+
+
+class ShowSharingMoneyApplicationAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ShowSharingMoneyApplicationSerializer
+
+    @swagger_auto_schema(tags=["Finance"])
+    def get(self, request):
+        user = get_user(request)
+        data = {}
+        aplication = SharingMoney.objects.filter(user=user)
+        if aplication.exists():
+            for i in range(aplication.count()):
+                data[i] = {
+                    "date_of_operation": aplication[i].date_of_operation,
+                    "status": aplication[i].status,
+                    "summ": aplication[i].summ,
+                    "way_to_pay": aplication[i].way_to_pay,
+                }
+            return Response(data, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"Error": "User does not have any application to show"},
+                status.HTTP_404_NOT_FOUND,
+            )

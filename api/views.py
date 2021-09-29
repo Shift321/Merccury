@@ -1,5 +1,6 @@
+from os import stat
 from admin.utils import is_blocked
-from finance.utils import get_user
+from api.utils import get_user
 import datetime
 
 from rest_framework import status, generics, serializers
@@ -14,6 +15,7 @@ from django.conf import settings
 from .models import User
 from .serializers import (
     LoginSerializer,
+    LoginVerificationSerializer,
     LogoutSerializer,
     ResetPasswordEmailRequestSerializer,
     SMSVerificationSerializer,
@@ -23,6 +25,7 @@ from .serializers import (
     SetNewPasswordSerializer,
     PasswordTokenCheckSerializer,
     AddMoreUserInfoSerializer,
+    ChangeVerificationChoiceSerializer,
 )
 from .utils import Util
 
@@ -343,3 +346,51 @@ class AddMoreUserInfoAPIView(generics.GenericAPIView):
                 {"Error": "your account blocked try to connect with admin"},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+
+class ChangeVerificationChoiceAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ChangeVerificationChoiceSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = get_user(request)
+        choice = serializer.data.get("what_choice")
+        user.verification_choice = choice
+        user.save()
+        return Response({"Success": "Changed"})
+
+
+class LoginVerificationChoiceAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = LoginVerificationSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        user = get_user(request)
+        sms_code = serializer.data.get("phone_code")
+        email_code = serializer.data.get("email_code")
+        if user.verification_choice == "absent":
+            return Response({"Success": "Logined"}, status=status.HTTP_200_OK)
+        if user.verification_choice == "SMS":
+            if user.code_for_phone == sms_code:
+                return Response({"Success": "Logined"}, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"Error": "Wrong code"}, status=status.HTTP_400_BAD_REQUEST
+                )
+        elif user.verification_choice == "email":
+            if user.code_for_email == email_code:
+                return Response({"Success": "Logined"}, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"Error": "Wrong code"}, status=status.HTTP_400_BAD_REQUEST
+                )
+        elif user.verification_choice == "SMS_email":
+            if user.code_for_email == email_code and user.code_for_phone == sms_code:
+                return Response({"Success": "Logined"}, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"Error": "Wrong code"}, status=status.HTTP_400_BAD_REQUEST
+                )

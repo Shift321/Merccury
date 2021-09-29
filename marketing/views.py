@@ -6,7 +6,7 @@ from rest_framework import status
 from api.models import User
 
 from .serializers import GetPartnerDataSerializer, GetAllPartnerDataSerializer
-from finance.utils import get_user
+from api.utils import get_user
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi

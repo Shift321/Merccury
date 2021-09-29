@@ -12,6 +12,13 @@ from django.contrib.auth.models import AbstractBaseUser, UserManager
 from django.contrib.auth.models import PermissionsMixin
 from phonenumber_field.modelfields import PhoneNumberField
 
+VERIFICATION_CHOICES = (
+    ("absent", "Отсутствует"),
+    ("SMS", "СМС"),
+    ("email", "email"),
+    ("SMS_email", "СМС + email"),
+)
+
 
 class User(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=255, verbose_name="Имя")
@@ -23,6 +30,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     code_for_phone = models.CharField(
         max_length=6, blank=True, default="", verbose_name="код для телефона"
+    )
+    code_for_email = models.CharField(
+        max_length=6, blank=True, default="", verbose_name="Код для почты"
     )
     username = models.CharField(
         max_length=255, unique=True, db_index=True, verbose_name="Логин"
@@ -88,7 +98,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         max_length=255, blank=True, default="", verbose_name="Номер банковской карты"
     )
     date_of_activate = models.DateField(
-        auto_now=False, auto_now_add=False, verbose_name="Дата активации"
+        auto_now=False,
+        auto_now_add=False,
+        verbose_name="Дата активации",
+        blank=True,
+        null=True,
     )
 
     is_staff = models.BooleanField(default=False)
@@ -96,6 +110,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified_by_phone = models.BooleanField(default=False)
     is_blocked = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    verification_choice = models.CharField(
+        max_length=255, default="0", choices=VERIFICATION_CHOICES
+    )
     USERNAME_FIELD = "username"
 
     REQUIRED_FIELDS = (

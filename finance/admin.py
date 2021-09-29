@@ -67,6 +67,8 @@ class FinanceAdmin(UserAdmin):
     def price_of_all(self, obj):
         return obj.price_of_all_indexes
 
+    price_of_all.short_description = "Цена всех индексов"
+
     list_display = ["username", "balance", "price_of_all"]
 
 
