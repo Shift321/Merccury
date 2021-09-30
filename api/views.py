@@ -368,6 +368,7 @@ class LoginVerificationChoiceAPIView(generics.GenericAPIView):
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
         user = get_user(request)
         sms_code = serializer.data.get("phone_code")
         email_code = serializer.data.get("email_code")
