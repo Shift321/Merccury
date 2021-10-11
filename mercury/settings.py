@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     "finance",
     "marketing",
     "onlineusers",
+    "messagesender",
+    "contest",
 ]
 
 MIDDLEWARE = [

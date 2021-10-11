@@ -90,6 +90,8 @@ class LoginSerializer(serializers.ModelSerializer):
             self.send_sms_with_code(user)
             self.send_email_with_code(user)
             return {"token": user.token}
+        else:
+            return {"token": user.token}
 
 
 class ChangePasswordSerializer(serializers.ModelSerializer):

@@ -41,6 +41,8 @@ urlpatterns = [
     path("api/marketing/", include("marketing.urls")),
     path("api/admin/", include("admin.urls")),
     path("api/onlineusers/", include("onlineusers.urls")),
+    path("api/messages/", include("messagesender.urls")),
+    path("api/contest/", include("contest.urls")),
     path("grappelli/", include("grappelli.urls")),
     path("admin/", admin.site.urls),
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),

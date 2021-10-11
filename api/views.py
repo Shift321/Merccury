@@ -81,7 +81,7 @@ class RegistrationAPIView(generics.GenericAPIView):
             "email_subject": "Verify your email",
         }
         Util.send_email(data_for_email)
-        code = Util.create_code(user)
+        code = Util.create_code(user, "SMS")
         Util.send_sms(code, phone_number)
 
         return Response(

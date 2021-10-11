@@ -164,7 +164,7 @@ class CreateSharingMoneyAPIView(generics.GenericAPIView):
 
     @swagger_auto_schema(tags=["Finance"])
     def post(self, request):
-        serilazer = self.serializer_class(data=request)
+        serilazer = self.serializer_class(data=request.data)
         serilazer.is_valid(raise_exception=True)
         user = get_user(request)
         application = SharingMoney.objects.create()
