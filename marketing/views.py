@@ -51,7 +51,6 @@ class GetPartnerData(generics.GenericAPIView):
     @swagger_auto_schema(tags=["Marketing"])
     def get(self, request):
         if not is_blocked:
-
             user = get_user(request)
             partner = User.objects.filter(id=user.id_of_invited)
             if partner.exists():

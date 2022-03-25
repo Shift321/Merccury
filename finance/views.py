@@ -1,12 +1,14 @@
+import json
 from os import stat
 from re import T
 import re
 from django.db.models import query
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import permissions
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-
+import requests
 from mercury.settings import SECRET_KEY
 from .models import (
     Index,
@@ -122,17 +124,18 @@ class ShowHistroyOfTopUpAPIView(generics.GenericAPIView):
         history = HistoryOfTopUp.objects.filter(user=user)
         if history.exists():
             summ_of_all_top_up = 0
-            data = {}
+            data = {"histroy": []}
             for i in range(history.count()):
-                data[i] = {
+                data_end = {
                     "summ_of_top_up": history[i].summ,
                     "date_of_top_up": history[i].time_of_payment,
                 }
                 summ_of_all_top_up += int(history[i].summ)
+                data["histroy"].append(data_end)
             data.update({"summ_of_all_top_up": summ_of_all_top_up})
             return Response(data, status=status.HTTP_200_OK)
         else:
-            return Response({"Error": "No history"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"Error": "No history"}, status=status.HTTP_204_NO_CONTENT)
 
 
 class ShowHistroyOfСonsumptionAPIView(generics.GenericAPIView):
@@ -145,13 +148,14 @@ class ShowHistroyOfСonsumptionAPIView(generics.GenericAPIView):
         history = HistroyOfСonsumption.objects.filter(user=user)
         if history.exists():
             summ_of_all_consumption = 0
-            data = {}
+            data = {"history": []}
             for i in range(history.count()):
-                data[i] = {
+                data_end = {
                     "summ_of_spend": history[i].summ,
                     "date_of_spend": history[i].time_of_spend,
                 }
                 summ_of_all_consumption += int(history[i].summ)
+                data["history"].append(data_end)
             data.update({"summ_of_all_consumption": summ_of_all_consumption})
             return Response(data, status=status.HTTP_200_OK)
         else:
@@ -185,19 +189,49 @@ class ShowSharingMoneyApplicationAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=["Finance"])
     def get(self, request):
         user = get_user(request)
-        data = {}
-        aplication = SharingMoney.objects.filter(user=user)
-        if aplication.exists():
-            for i in range(aplication.count()):
-                data[i] = {
-                    "date_of_operation": aplication[i].date_of_operation,
-                    "status": aplication[i].status,
-                    "summ": aplication[i].summ,
-                    "way_to_pay": aplication[i].way_to_pay,
-                }
-            return Response(data, status=status.HTTP_200_OK)
-        else:
-            return Response(
-                {"Error": "User does not have any application to show"},
-                status.HTTP_404_NOT_FOUND,
-            )
+        aplications = SharingMoney.objects.filter(user=user)
+        data = {"info": []}
+        for aplication in aplications:
+            data_last = {
+                "date_of_operation": aplication.date_of_operation,
+                "status": aplication.status,
+                "summ": aplication.summ,
+                "way_to_pay": aplication.way_to_pay,
+            }
+            data["info"].append(data_last)
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class ShowPriceOfCryptoAPIView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        prices = {"prices": []}
+        url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=btc,eth,bnb,usdt,sol,ada,xrp,usdt,bnb,usdc,ltc&convert=USD"
+        headers = {
+            "Accepts": "application/json",
+            "X-CMC_PRO_API_KEY": "7f386aef-d035-4300-866f-8563fc5e03c7",
+        }
+        r = requests.get(url, headers=headers)
+        text = json.loads(r.text)
+        currency = ["BTC", "ETH", "SOL", "ADA", "XRP", "USDT", "BNB", "USDC", "LTC"]
+        data = {"data": []}
+        for i in currency:
+            id = text["data"][f"{i}"]["id"]
+            market_cap = text["data"][f"{i}"]["quote"]["USD"]["market_cap"]
+            price = text["data"][f"{i}"]["quote"]["USD"]["price"]
+            data_of_current_currency = {
+                "name": text["data"][f"{i}"]["name"],
+                "symbol": text["data"][f"{i}"]["symbol"],
+                "Rank": text["data"][f"{i}"]["cmc_rank"],
+                "PriceUSD": price,
+                "volume24hUSD": text["data"][f"{i}"]["quote"]["USD"]["volume_24h"],
+                "marketCapUSD": market_cap,
+                "percentChange24h": text["data"][f"{i}"]["quote"]["USD"][
+                    "percent_change_24h"
+                ],
+                "Supl": float(market_cap) / float(price),
+                "icon": f"https://s2.coinmarketcap.com/static/img/coins/64x64/{id}.png",
+            }
+            data["data"].append(data_of_current_currency)
+        return Response(data, status=status.HTTP_200_OK)

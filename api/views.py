@@ -1,22 +1,23 @@
-from os import stat
+from django.core.files.base import ContentFile
+from rest_framework import permissions
 from admin.utils import is_blocked
 from api.utils import get_user
 import datetime
-
 from rest_framework import status, generics, serializers
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
-from django.contrib.auth import authenticate
-
 from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse
-from django.conf import settings
+import base64
+from django.core.files.base import ContentFile
+from messagesender.models import Dialog
 
-from .models import User
+from .models import BlackList, User
 from .serializers import (
     LoginSerializer,
     LoginVerificationSerializer,
     LogoutSerializer,
+    PutFromBlackListSerializer,
     ResetPasswordEmailRequestSerializer,
     SMSVerificationSerializer,
     RegistrationSerializer,
@@ -26,6 +27,8 @@ from .serializers import (
     PasswordTokenCheckSerializer,
     AddMoreUserInfoSerializer,
     ChangeVerificationChoiceSerializer,
+    PutOnBlackListSerializer,
+    UploadAvatar,
 )
 from .utils import Util
 
@@ -253,8 +256,7 @@ class LogoutAPIView(generics.GenericAPIView):
     @swagger_auto_schema(tags=["Auth"])
     def get(self, request):
         if not is_blocked(request):
-
-            request.user.auth_token.delete()
+            request.user.token.delete()
 
             return Response({"Logged out": "succeess"}, status=status.HTTP_200_OK)
         else:
@@ -268,7 +270,7 @@ class ChangePasswordAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ChangePasswordSerializer
 
-    def get_object(self, queryset=None):
+    def get_object(self):
         return self.request.user
 
     @swagger_auto_schema(tags=["Auth"])
@@ -286,7 +288,9 @@ class ChangePasswordAPIView(generics.GenericAPIView):
                     )
                 self.object.set_password(serializer.data.get("new_password"))
                 self.object.save()
-                return Response(status=status.HTTP_200_OK)
+                return Response(
+                    {"Success": "Successfully changed"}, status=status.HTTP_200_OK
+                )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(
@@ -300,11 +304,12 @@ class AddMoreUserInfoAPIView(generics.GenericAPIView):
     serializer_class = AddMoreUserInfoSerializer
 
     @swagger_auto_schema(tags=["Auth"])
-    def path(self, request):
+    def post(self, request):
         if not is_blocked(request):
             user = get_user(request)
             serializer = self.serializer_class(data=request.data)
             if serializer.is_valid():
+                username = serializer.data.get("username")
                 office = serializer.data.get("office")
                 town = serializer.data.get("town")
                 description = serializer.data.get("description")
@@ -319,24 +324,42 @@ class AddMoreUserInfoAPIView(generics.GenericAPIView):
                 inn = serializer.data.get("inn")
                 snils = serializer.data.get("snils")
                 number_of_bank_cart = serializer.data.get("number_of_bank_cart")
-                user.office = office
-                user.town = town
-                user.description = description
-                user.pasport_serial = pasport_serial
-                user.pasport_number = pasport_number
-                user.pasport_date_of_gave = pasport_date_of_gave
-                user.pasport_who_gave = pasport_who_gave
-                user.citizenship = citizenship
-                user.city_of_born = city_of_born
-                user.adress = adress
-                user.adress_of_living = adress_of_living
-                user.inn = inn
-                user.snils = snils
-                user.number_of_bank_cart = number_of_bank_cart
-                user.save()
-                return Response(
-                    {"success": "data added successfully"}, status=status.HTTP_200_OK
-                )
+                telegram = serializer.data.get("telegram")
+                facebook = serializer.data.get("facebook")
+                instagram = serializer.data.get("instagram")
+                twitter = serializer.data.get("twitter")
+                youtube = serializer.data.get("youtube")
+                vk = serializer.data.get("vk")
+
+                try:
+                    user.username = username
+                    user.office = office
+                    user.town = town
+                    user.description = description
+                    user.pasport_serial = pasport_serial
+                    user.pasport_number = pasport_number
+                    user.pasport_date_of_gave = pasport_date_of_gave
+                    user.pasport_who_gave = pasport_who_gave
+                    user.citizenship = citizenship
+                    user.city_of_born = city_of_born
+                    user.adress = adress
+                    user.adress_of_living = adress_of_living
+                    user.inn = inn
+                    user.snils = snils
+                    user.number_of_bank_cart = number_of_bank_cart
+                    user.telegram = telegram
+                    user.facebook = facebook
+                    user.instagram = instagram
+                    user.twitter = twitter
+                    user.youtube = youtube
+                    user.vk = vk
+                    user.save()
+                    return Response(
+                        {"success": "data added successfully"},
+                        status=status.HTTP_200_OK,
+                    )
+                except:
+                    return Response({"error": "Username alredy exists"})
             else:
                 return Response(
                     {"error": "serializer error"}, status=status.HTTP_400_BAD_REQUEST
@@ -352,6 +375,7 @@ class ChangeVerificationChoiceAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ChangeVerificationChoiceSerializer
 
+    @swagger_auto_schema(tags=["Auth"])
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -359,13 +383,14 @@ class ChangeVerificationChoiceAPIView(generics.GenericAPIView):
         choice = serializer.data.get("what_choice")
         user.verification_choice = choice
         user.save()
-        return Response({"Success": "Changed"})
+        return Response({"Success": "Changed"}, status=status.HTTP_200_OK)
 
 
 class LoginVerificationChoiceAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = LoginVerificationSerializer
 
+    @swagger_auto_schema(tags=["Auth"])
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -395,3 +420,175 @@ class LoginVerificationChoiceAPIView(generics.GenericAPIView):
                 return Response(
                     {"Error": "Wrong code"}, status=status.HTTP_400_BAD_REQUEST
                 )
+
+
+class PutOnBlackListAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PutOnBlackListSerializer
+
+    @swagger_auto_schema(tags=["Black list"])
+    def post(self, request):
+        user = get_user(request)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            list = BlackList.objects.get(user=user)
+        except:
+            list = BlackList.objects.create(user=user)
+        id = serializer.data.get("id")
+        who_to_block = User.objects.get(id=id)
+        list.blocked_users.add(who_to_block)
+        return Response(
+            {"Success": "Successfuly added to block list"}, status=status.HTTP_200_OK
+        )
+
+
+class PutAwayFromBlackListAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(tags=["Black list"])
+    def post(self, request):
+        user = get_user(request)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        list = BlackList.objects.get(user=user)
+        id = serializer.data.get("id")
+        who_to_block = User.objects.get(id=id)
+        list.blocked_users.remove(who_to_block)
+        return Response(
+            {"Success": "Successfuly removed from block list"},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ShowMyDataAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(tags=["User"])
+    def get(self, request):
+        user = get_user(request)
+        dialogs = Dialog.objects.filter(users=user)
+        counter = 0
+        for dialog in dialogs:
+            messages = dialog.messages.exclude(sender=user).all()
+            for message in messages:
+                if message.is_read == False:
+                    counter += 1
+        sponsor = User.objects.get(id=user.id_of_invited) 
+        data = {
+            "id": user.id,
+            "Surename": user.second_name,
+            "Name": user.name,
+            "PhoneNumber": str(user.phone_number),
+            "Username": user.username,
+            "email": user.email,
+            "verify_by_phone": user.is_verified_by_phone,
+            "verify_by_email": user.is_verified_by_email,
+            "unread_messages": counter,
+            "viewers": "1",
+            "avatar": str(user.avatar),
+            "rank": "rank",
+            "date_of_birth": user.date_of_birth,
+            "country": user.citizenship,
+            "city": user.city_of_born,
+            "telegram": user.telegram,
+            "vk": user.vk,
+            "facebook": user.facebook,
+            "instagram": user.instagram,
+            "twitter": user.twitter,
+            "youtube": user.youtube,
+            "info_of_sponsor": {
+                "id_of_sponsor": sponsor.id,
+                "Name_of_sponsor": sponsor.name,
+                "surename_of_sponsor": sponsor.second_name,
+            },
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class ShowDataOfUserAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(tags=["User"])
+    def get(self, request, id):
+        main_user = get_user(request)
+        user = User.objects.get(id=id)
+        is_user_me = False
+        if main_user == user:
+            is_user_me = True
+        sponsor = User.objects.get(id=user.id_of_invited)
+        data = {
+            "id": user.id,
+            "Surename": user.second_name,
+            "Name": user.name,
+            "PhoneNumber": str(user.phone_number),
+            "Username": user.username,
+            "email": user.email,
+            "verify_by_phone": user.is_verified_by_phone,
+            "verify_by_email": user.is_verified_by_email,
+            "viewers": "1",
+            "avatar": str(user.avatar),
+            "date_of_birth": user.date_of_birth,
+            "country": user.citizenship,
+            "city": user.city_of_born,
+            "telegram": user.telegram,
+            "vk": user.vk,
+            "facebook": user.facebook,
+            "instagram": user.instagram,
+            "twitter": user.twitter,
+            "youtube": user.youtube,
+            "info_of_sponsor": {
+                "id_of_sponsor": sponsor.id,
+                "Name_of_sponsor": sponsor.name,
+                "surename_of_sponsor": sponsor.second_name,
+            },
+            "rank": "rank",
+            "is_user_me": is_user_me,
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class IsVerify(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(tags=["User"])
+    def get(self, request):
+        user = get_user(request)
+        data = {"info": []}
+        data_last = {
+            "Phone": user.is_verified_by_phone,
+            "Email": user.is_verified_by_email,
+        }
+        data["info"].append(data_last)
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class UploadAvatar(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UploadAvatar
+
+    @swagger_auto_schema(tags=["User"])
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = get_user(request)
+        pic = serializer.data.get("avatar")
+        format, imgstr = pic.split(";base64,")
+        ext = format.split("/")[-1]
+        avatar = ContentFile(base64.b64decode(imgstr), name="temp." + ext)
+        user.avatar = avatar
+        user.save()
+        return Response({"Success": "Avatar uploaded"}, status=status.HTTP_200_OK)
+
+
+class GenerateRefLink(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(tags=["User"])
+    def get(self, request):
+        user = get_user(request)
+        current_site = get_current_site(request).domain
+        absurl = "http://" + current_site + f"/referal/{user.id}"
+        return Response({"link": f"{absurl}"}, status=status.HTTP_200_OK)

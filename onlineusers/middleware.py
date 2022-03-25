@@ -1,13 +1,16 @@
+import datetime
+from django.core.cache import cache
+from django.conf import settings
 from django.utils.deprecation import MiddlewareMixin
-
-from .models import OnlineUserActivity
+import datetime
+from api.utils import get_user
 
 
 class OnlineNowMiddleware(MiddlewareMixin):
-    @staticmethod
-    def process_request(request):
-        user = request.user
-        if not user.is_authenticated:
-            return
-
-        OnlineUserActivity.update_user_activity(user)
+    def process_request(self, request):
+        current_user = get_user(request)
+        if current_user.is_authenticated:
+            now = datetime.datetime.now()
+            cache.set(
+                "seen_%s" % (current_user.username), now, settings.USER_LASTSEEN_TIMEOUT
+            )

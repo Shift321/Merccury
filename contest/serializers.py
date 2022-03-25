@@ -25,3 +25,18 @@ class CreateContestSerializer(serializers.Serializer):
         image = File(f)
         data = base64.b64encode(image.read())
         return data
+
+
+class VoteSerializer(serializers.Serializer):
+    vote_for = serializers.CharField(max_length=255)
+    post = serializers.CharField(max_length=255)
+
+
+class CreatePostSerializer(serializers.Serializer):
+    question = serializers.CharField(max_length=255)
+    days = serializers.CharField(max_length=2)
+
+
+class AddQuestionSerializer(serializers.Serializer):
+    variation_of_anwser = serializers.CharField(max_length=255)
+    post = serializers.CharField(max_length=255)

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Contest
+from .models import Answers, Contest, Post
 
 
 class ContestAdmin(admin.ModelAdmin):
@@ -20,3 +20,5 @@ class ContestAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Contest, ContestAdmin)
+admin.site.register(Post)
+admin.site.register(Answers)

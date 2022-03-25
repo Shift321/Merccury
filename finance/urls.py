@@ -2,6 +2,7 @@ from finance.views import (
     CreateIndexAPIView,
     GetFinanceInfoAPIView,
     ShowHistroyOfTopUpAPIView,
+    ShowPriceOfCryptoAPIView,
     ShowSharingMoneyApplicationAPIView,
     TopUpBalanceAPIView,
     ShowHistroyOfСonsumptionAPIView,
@@ -17,4 +18,5 @@ urlpatterns = [
     path("show-history-of-consumption", ShowHistroyOfСonsumptionAPIView.as_view()),
     path("share-money", CreateSharingMoneyAPIView.as_view()),
     path("show-sharing-money", ShowSharingMoneyApplicationAPIView.as_view()),
+    path("show-price-crypto", ShowPriceOfCryptoAPIView.as_view()),
 ]

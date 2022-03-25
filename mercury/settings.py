@@ -48,6 +48,10 @@ INSTALLED_APPS = [
     "onlineusers",
     "messagesender",
     "contest",
+    "news",
+    "viewers",
+    "feedback",
+    "offices",
 ]
 
 MIDDLEWARE = [
@@ -113,8 +117,22 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
-
+if os.name == "nt":
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+            "LOCATION": "c:/foo/bar",
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
+            "LOCATION": "127.0.0.1:11211",
+        }
+    }
+USER_ONLINE_TIMEOUT = 300
+USER_LASTSEEN_TIMEOUT = 60 * 60 * 24 * 7
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 

@@ -1,3 +1,4 @@
+from django.db.models.deletion import CASCADE
 import jwt
 
 from datetime import datetime
@@ -25,6 +26,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     second_name = models.CharField(max_length=255, verbose_name="Фамилия")
     patronymic = models.CharField(max_length=255, blank=True, verbose_name="Отчество")
     phone_number = PhoneNumberField(verbose_name="Номер телефона")
+    avatar = models.ImageField(upload_to="user/profile_photo", null=True, blank=True)
     date_of_registration = models.DateTimeField(
         auto_now_add=True, db_index=True, verbose_name="Дата регистрации"
     )
@@ -51,51 +53,66 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     office = models.CharField(
-        max_length=255, blank=True, default="", verbose_name="Офис"
+        max_length=255, blank=True, null=True, default="", verbose_name="Офис"
     )
     town = models.CharField(
-        max_length=255, blank=True, default="", verbose_name="Город"
+        max_length=255, blank=True, null=True, default="", verbose_name="Город"
     )
     description = models.CharField(
-        max_length=255, blank=True, default="", verbose_name="Описание"
+        max_length=255, blank=True, null=True, default="", verbose_name="Описание"
     )
 
     pasport_serial = models.CharField(
-        max_length=255, blank=True, default="", verbose_name="Паспорт серия"
+        max_length=255, blank=True, null=True, default="", verbose_name="Паспорт серия"
     )
     pasport_number = models.CharField(
-        max_length=255, blank=True, default="", verbose_name="Паспорт номер"
+        max_length=255, blank=True, null=True, default="", verbose_name="Паспорт номер"
     )
     pasport_date_of_gave = models.DateField(
-        blank=True, default="1970-03-19", verbose_name="Паспорт дата выдачи"
+        blank=True, default="1970-03-19", null=True, verbose_name="Паспорт дата выдачи"
     )
     pasport_who_gave = models.CharField(
-        max_length=255, blank=True, default="", verbose_name="Гражданство"
+        max_length=255,
+        blank=True,
+        default="",
+        null=True,
+        verbose_name="Кто выдал паспорт",
     )
     citizenship = models.CharField(
-        max_length=255, blank=True, default="", verbose_name=""
+        max_length=255,
+        blank=True,
+        default="",
+        null=True,
+        verbose_name="Страна рождения",
     )
     city_of_born = models.CharField(
-        max_length=255, blank=True, default="", verbose_name="Город рождения"
+        max_length=255, blank=True, default="", null=True, verbose_name="Город рождения"
     )
     date_of_birth = models.DateField(
-        blank=True, default="1970-03-19", verbose_name="Дата рождения"
+        blank=True, default="1970-03-19", null=True, verbose_name="Дата рождения"
     )
     adress = models.CharField(
-        max_length=255, blank=True, default="", verbose_name="Прописка"
+        max_length=255, blank=True, default="", null=True, verbose_name="Прописка"
     )
     adress_of_living = models.CharField(
         max_length=255,
         blank=True,
         default="",
         verbose_name="Адресс фактического проживания",
+        null=True,
     )
-    inn = models.CharField(max_length=255, blank=True, default="", verbose_name="ИНН")
+    inn = models.CharField(
+        max_length=255, blank=True, null=True, default="", verbose_name="ИНН"
+    )
     snils = models.CharField(
-        max_length=255, blank=True, default="", verbose_name="СНИЛС"
+        max_length=255, blank=True, default="", null=True, verbose_name="СНИЛС"
     )
     number_of_bank_cart = models.CharField(
-        max_length=255, blank=True, default="", verbose_name="Номер банковской карты"
+        max_length=255,
+        blank=True,
+        default="",
+        null=True,
+        verbose_name="Номер банковской карты",
     )
     date_of_activate = models.DateField(
         auto_now=False,
@@ -103,6 +120,24 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name="Дата активации",
         blank=True,
         null=True,
+    )
+    telegram = models.CharField(
+        max_length=255, blank=True, default="", null=True, verbose_name="телеграм"
+    )
+    facebook = models.CharField(
+        max_length=255, blank=True, default="", null=True, verbose_name="фейсбук"
+    )
+    instagram = models.CharField(
+        max_length=255, blank=True, default="", null=True, verbose_name="инстаграм"
+    )
+    twitter = models.CharField(
+        max_length=255, blank=True, default="", null=True, verbose_name="твиттер"
+    )
+    youtube = models.CharField(
+        max_length=255, blank=True, default="", null=True, verbose_name="ютуб"
+    )
+    vk = models.CharField(
+        max_length=255, blank=True, default="", null=True, verbose_name="вк"
     )
 
     is_staff = models.BooleanField(default=False)
@@ -153,7 +188,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.name
 
     def _generate_jwt_token(self):
-        dt = datetime.now() + timedelta(days=60)
         some_data = {"id": self.pk, "exp": 1916239022}
         token = jwt.encode(some_data, settings.SECRET_KEY, algorithm="HS256")
         return token.decode("utf-8")
@@ -238,3 +272,8 @@ class UserManager(BaseUserManager):
             raise ValueError("Суперпользователь должен иметь is_super=True.")
 
         return self._create_user(username, password, **extra_fields)
+
+
+class BlackList(models.Model):
+    user = models.ForeignKey(User, on_delete=CASCADE, related_name="Юзер")
+    blocked_users = models.ManyToManyField(User, related_name="user_who_blocked_you")

@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
+import base64
 
 
 from .models import User
@@ -18,7 +19,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
         min_length=6,
         write_only=True,
     )
-
     token = serializers.CharField(max_length=255, read_only=True)
 
     class Meta:
@@ -34,6 +34,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
             "phone_number",
             "token",
         ]
+
+    def get_base64_image(self, obj):
+        f = open(obj.image_file.path, "rb")
 
     def create(self, validate_data):
         return User.objects.create_user(**validate_data)
@@ -172,24 +175,30 @@ class LogoutSerializer(serializers.Serializer):
 
 
 class AddMoreUserInfoSerializer(serializers.Serializer):
+    username = serializers.CharField(required=False)
+    office = serializers.CharField(required=False)
+    town = serializers.CharField(required=False)
+    description = serializers.CharField(required=False)
+    pasport_serial = serializers.CharField(required=False)
+    pasport_number = serializers.CharField(required=False)
+    pasport_date_of_gave = serializers.CharField(required=False)
+    pasport_who_gave = serializers.CharField(required=False)
+    citizenship = serializers.CharField(required=False)
+    city_of_born = serializers.CharField(required=False)
+    adress = serializers.CharField(required=False)
+    adress_of_living = serializers.CharField(required=False)
+    inn = serializers.CharField(required=False)
+    snils = serializers.CharField(required=False)
+    number_of_bank_cart = serializers.CharField(required=False)
+    telegram = serializers.CharField(required=False)
+    facebook = serializers.CharField(required=False)
+    instagram = serializers.CharField(required=False)
+    twitter = serializers.CharField(required=False)
+    youtube = serializers.CharField(required=False)
+    vk = serializers.CharField(required=False)
+
     class Meta:
         model = User
-        fields = [
-            "office",
-            "town",
-            "description",
-            "pasport_serial",
-            "pasport_number",
-            "pasport_date_of_gave",
-            "pasport_who_gave",
-            "citizenship",
-            "city_of_born",
-            "adress",
-            "adress_of_living",
-            "inn",
-            "snils",
-            "number_of_bank_cart",
-        ]
 
 
 class ChangeVerificationChoiceSerializer(serializers.Serializer):
@@ -205,3 +214,25 @@ class LoginVerificationSerializer(serializers.Serializer):
 
     class Meta:
         model = User
+
+
+class PutOnBlackListSerializer(serializers.Serializer):
+    id = serializers.CharField(max_length=255, min_length=1)
+
+    class Meta:
+        model = User
+
+
+class PutFromBlackListSerializer(serializers.Serializer):
+    id = serializers.CharField(max_length=255, min_length=1)
+
+    class Meta:
+        model = User
+
+
+class IsVerified(serializers.Serializer):
+    id = serializers.CharField(max_length=255, min_length=1)
+
+
+class UploadAvatar(serializers.Serializer):
+    avatar = serializers.CharField(max_length=90000000, min_length=1)

@@ -16,8 +16,10 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
 
-    def __str__(self):
-        return self.message
-
     class Meta:
         ordering = ("created_at",)
+
+
+class Dialog(models.Model):
+    messages = models.ManyToManyField("messagesender.Message", verbose_name="messages")
+    users = models.ManyToManyField("api.User", verbose_name="users")
